@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Jarvis Premium OS | Interactive Portfolio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Plus+Jakarta+Sans:wght@300;600;800&family=Fira+Code:wght@400&display=swap');
+        :root { --gold: #d4ff00; --bg: #010101; --danger: #ff0033; }
+        body { margin: 0; background: var(--bg); overflow: hidden; font-family: 'Plus Jakarta Sans', sans-serif; color: white; cursor: crosshair; }
+        #viewport { position: absolute; width: 100vw; height: 100vh; z-index: 1; }
+        #user-id-badge { position: fixed; top: 20px; right: 20px; background: rgba(212, 255, 0, 0.05); border: 1px solid var(--gold); padding: 15px; border-radius: 10px; font-family: 'Fira Code', monospace; font-size: 10px; color: var(--gold); display: none; z-index: 200; backdrop-filter: blur(10px); }
+        #security-alert { position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(255, 0, 51, 0.3); border: 2px solid var(--danger); padding: 20px; border-radius: 15px; z-index: 1000; display: none; text-align: center; color: var(--danger); font-family: 'Syncopate', sans-serif; box-shadow: 0 0 40px var(--danger); }
+        .interface { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; display: flex; z-index: 100; pointer-events: none; }
+        .auth-side { flex: 1; display: flex; justify-content: center; align-items: center; pointer-events: auto; }
+        .auth-card { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(40px); padding: 45px; width: 380px; border-radius: 32px; border: 1px solid var(--gold); text-align: center; box-shadow: 0 50px 100px rgba(0,0,0,0.9); }
+        input { width: 90%; padding: 14px; border-radius: 12px; border: 1px solid #222; background: #000; color: #fff; margin-bottom: 15px; outline: none; text-align: center; }
+        .btn-main { width: 100%; padding: 18px; border-radius: 50px; border: none; background: var(--gold); color: #000; font-weight: 800; cursor: pointer; margin-bottom: 15px; }
+        #reveal-container { display: none; position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-align: center; z-index: 150; pointer-events: none; --light-x: 0%; }
+        .text-main { font-size: 70px; font-weight: 900; font-family: 'Arial Black'; line-height: 1.1; position: relative; }
+        .text-outline { color: transparent; -webkit-text-stroke: 1.5px #444; position: absolute; width: 100%; left: 0; }
+        .text-filled { color: var(--gold); position: relative; -webkit-mask-image: radial-gradient(circle 200px at var(--light-x) 50%, black 0%, transparent 100%); text-shadow: 0 0 30px var(--gold); }
+        #subtitles { position: absolute; bottom: 8%; width: 85%; left: 7.5%; text-align: center; font-size: 16px; font-weight: 600; color: #fff; z-index: 200; display: none; line-height: 1.6; text-transform: uppercase; background: rgba(0,0,0,0.7); padding: 20px; border-radius: 15px; border-bottom: 2px solid var(--gold); }
+    </style>
+</head>
+<body>
+
+<div id="security-alert"><strong>[ACCESS DENIED]</strong><br>INTRUDER TRACKING ACTIVE</div>
+<div id="user-id-badge">ID: USER_722<br>LOC: GLOBAL<br>STATUS: AUTHENTICATED</div>
+<div id="viewport"></div>
+
+<div class="interface">
+    <div class="auth-side">
+        <div class="auth-card" id="authCard">
+            <h1 id="os-title" style="font-family:Syncopate; font-size:24px; letter-spacing:5px;">BOGAN OS</h1>
+            <input type="password" id="passInput" placeholder="Security Key">
+            <button class="btn-main" onclick="handleAuth()">INITIATE CORE</button>
+        </div>
+    </div>
+</div>
+
+<div id="reveal-container"><div class="text-main"><div class="text-outline" id="name-outline"></div><div class="text-filled" id="name-filled"></div></div></div>
+<div id="subtitles"></div>
+
+<script>
+    // ==========================================
+    // ⚙️ ADMIN CONFIG (Ise badal kar sell kar sakte ho)
+    // ==========================================
+    const CONFIG = {
+        ownerName: "AAYUSH DEVELOPER",
+        password: "aayush",
+        osTitle: "JARVIS OS v20",
+        introPhrases: [
+            "Access Granted. Identity Verified.",
+            "I am a software engineer specializing in exceptional digital experiences.",
+            "Expert in HTML, CSS, PHP, JavaScript, and Python.",
+            "Specializing in E-commerce, Online Portals, and CRM design.",
+            "Delivering technical excellence through modern architecture."
+        ],
+        projectNames: ['E-COMMERCE', 'ONLINE_PORTAL', 'CRM_SYSTEM'],
+        nebulaColor: 0x6600ff
+    };
+
+    // UI Initial Setup
+    document.getElementById('os-title').innerText = CONFIG.osTitle;
+    document.getElementById('name-outline').innerHTML = CONFIG.ownerName.replace(" ", "<br>");
+    document.getElementById('name-filled').innerHTML = CONFIG.ownerName.replace(" ", "<br>");
+
+    let scene, camera, renderer, bag, starParticles, nebulaParticles, cubes = [], isLive = false, mouse = new THREE.Vector2(0,0);
+
+    function init3D() {
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('viewport').appendChild(renderer.domElement);
+        
+        const starGeo = new THREE.BufferGeometry();
+        const starPos = new Float32Array(2000 * 3);
+        for(let i=0; i<2000*3; i++) starPos[i] = (Math.random() - 0.5) * 200;
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        starParticles = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.35 }));
+        scene.add(starParticles);
+
+        const nebulaGeo = new THREE.BufferGeometry();
+        const nebPos = new Float32Array(600 * 3);
+        for(let i=0; i<600*3; i++) nebPos[i] = (Math.random() - 0.5) * 60;
+        nebulaGeo.setAttribute('position', new THREE.BufferAttribute(nebPos, 3));
+        nebulaParticles = new THREE.Points(nebulaGeo, new THREE.PointsMaterial({ color: CONFIG.nebulaColor, size: 7, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending }));
+        scene.add(nebulaParticles);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        bag = new THREE.Mesh(new THREE.BoxGeometry(1.8, 2.4, 0.9), new THREE.MeshPhongMaterial({ color: 0xd4ff00 }));
+        scene.add(bag);
+        camera.position.z = 5;
+    }
+
+    function handleAuth() {
+        if(document.getElementById('passInput').value === CONFIG.password) startExperience();
+        else {
+            const rage = new SpeechSynthesisUtterance("Unauthorized access! Get away.");
+            rage.pitch = 0.4; window.speechSynthesis.speak(rage);
+            document.getElementById('security-alert').style.display = 'block';
+            setTimeout(() => document.getElementById('security-alert').style.display = 'none', 2000);
+        }
+    }
+
+    function startExperience() {
+        if(isLive) return; isLive = true;
+        document.getElementById('user-id-badge').style.display = 'block';
+        gsap.to("#authCard", { opacity: 0, scale: 0.5, duration: 0.5, onComplete: () => document.getElementById('authCard').style.display = 'none' });
+        
+        let idx = 0; const sub = document.getElementById('subtitles'); sub.style.display = 'block';
+        function speak() {
+            if (idx < CONFIG.introPhrases.length) {
+                const u = new SpeechSynthesisUtterance(CONFIG.introPhrases[idx]);
+                sub.innerText = CONFIG.introPhrases[idx];
+                u.onend = () => { idx++; speak(); };
+                window.speechSynthesis.speak(u);
+            } else { gsap.to(sub, { opacity: 0 }); }
+        }
+        speak();
+
+        const reveal = document.getElementById('reveal-container');
+        reveal.style.display = 'block'; gsap.to(reveal, { opacity: 1, duration: 1 });
+        let sweepX = -20;
+        const scan = () => { sweepX += 0.5; if (sweepX > 130) sweepX = -20; reveal.style.setProperty('--light-x', `${sweepX}%`); requestAnimationFrame(scan); }; scan();
+
+        gsap.to(bag.scale, { x: 10, y: 10, z: 10, duration: 0.8, onComplete: () => { scene.remove(bag); createHub(); }});
+    }
+
+    function createHub() {
+        for(let i=0; i<3; i++) {
+            const cube = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), new THREE.MeshPhongMaterial({ color: 0xd4ff00, wireframe: true }));
+            cube.position.set((i-1)*6, -2.5, 0);
+            cube.userData = { origX: (i-1)*6 };
+            scene.add(cube); cubes.push(cube);
+        }
+    }
+
+    window.addEventListener('mousemove', (e) => {
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    });
+
+    function animate() {
+        requestAnimationFrame(animate);
+        if(starParticles) starParticles.rotation.y += 0.0005;
+        if(nebulaParticles) { nebulaParticles.rotation.z += 0.001; const s = 1 + Math.sin(Date.now() * 0.001) * 0.15; nebulaParticles.scale.set(s, s, s); }
+        if(!isLive) bag.rotation.y += 0.01;
+        else {
+            cubes.forEach(c => {
+                const tx = mouse.x * 10, ty = mouse.y * 6;
+                const dist = Math.sqrt(Math.pow(c.position.x - tx, 2) + Math.pow(c.position.y - ty, 2));
+                if(dist < 2.5) { c.position.x += (tx - c.position.x) * 0.1; c.position.y += (ty - c.position.y) * 0.1; c.scale.set(1.4, 1.4, 1.4); c.material.wireframe = false; }
+                else { c.position.x += (c.userData.origX - c.position.x) * 0.05; c.position.y += (-2.5 + Math.sin(Date.now()*0.002)*0.2 - c.position.y) * 0.05; c.scale.set(1, 1, 1); c.material.wireframe = true; }
+                c.rotation.x += 0.01; c.rotation.y += 0.01;
+            });
+        }
+        renderer.render(scene, camera);
+    }
+    init3D(); animate();
+</script>
+</body>
+</html>
